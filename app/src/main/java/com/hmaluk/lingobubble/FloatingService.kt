@@ -33,16 +33,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LifecycleRegistry
-import androidx.lifecycle.ViewModelStore
-import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
-import androidx.savedstate.SavedStateRegistry
-import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import kotlinx.coroutines.Dispatchers
@@ -50,7 +44,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-class FloatingService : Service() {
+class FloatingService : LifecycleService() {
 
     companion object {
         var isRunning = false
@@ -60,8 +54,6 @@ class FloatingService : Service() {
     private lateinit var windowManager: WindowManager
     private lateinit var composeView: ComposeView
     private lateinit var params: WindowManager.LayoutParams
-    private val lifecycleOwner = FloatingServiceLifecycleOwner()
-    
     private lateinit var settingsManager: SettingsManager
     
     private var translationEngine = mutableStateOf<TranslationEngine?>(null)
@@ -88,6 +80,7 @@ class FloatingService : Service() {
     private lateinit var settingsParams: WindowManager.LayoutParams
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
         val resultCode = intent?.getIntExtra("resultCode", Activity.RESULT_CANCELED) ?: Activity.RESULT_CANCELED
         val data = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent?.getParcelableExtra("data", Intent::class.java)
@@ -127,15 +120,15 @@ class FloatingService : Service() {
         translationEngine.value?.stop()
         translationEngine.value = when (engineType.value) {
             "Groq" -> GroqTranslationEngine(
-                lifecycleOwner.lifecycleScope, 
+                lifecycleScope, 
                 sourceLang.value, 
                 targetLang.value, 
                 settingsManager.groqKey,
                 groqRateMs
             )
-            "Whisper" -> WhisperOfflineEngine(this, lifecycleOwner.lifecycleScope, sourceLang.value, targetLang.value)
+            "Whisper" -> WhisperOfflineEngine(this, lifecycleScope, sourceLang.value, targetLang.value)
             else -> AzureTranslationEngine(
-                lifecycleOwner.lifecycleScope, 
+                lifecycleScope, 
                 sourceLang.value, 
                 targetLang.value, 
                 settingsManager.azureKey, 
@@ -172,8 +165,8 @@ class FloatingService : Service() {
     private fun setupMainOverlay() {
         composeView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(lifecycleOwner)
-            setViewTreeViewModelStoreOwner(lifecycleOwner)
-            setViewTreeSavedStateRegistryOwner(lifecycleOwner)
+            setViewTreeViewModelStoreOwner(this@FloatingService)
+            setViewTreeSavedStateRegistryOwner(this@FloatingService)
 
             setContent {
                 MaterialTheme {
@@ -232,8 +225,8 @@ class FloatingService : Service() {
     private fun setupSettingsOverlay() {
         settingsView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(lifecycleOwner)
-            setViewTreeViewModelStoreOwner(lifecycleOwner)
-            setViewTreeSavedStateRegistryOwner(lifecycleOwner)
+            setViewTreeViewModelStoreOwner(this@FloatingService)
+            setViewTreeSavedStateRegistryOwner(this@FloatingService)
             setContent {
                 MaterialTheme {
                     QuickSettingsOverlay(
@@ -341,7 +334,7 @@ class FloatingService : Service() {
 
             audioRecord?.startRecording()
             
-            recordingJob = lifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            recordingJob = lifecycleScope.launch(Dispatchers.IO) {
                 val buffer = ShortArray(bufferSize / 2)
                 val byteBuffer = ByteBuffer.allocate(bufferSize).order(ByteOrder.LITTLE_ENDIAN)
                 
@@ -389,7 +382,10 @@ class FloatingService : Service() {
         lifecycleOwner.onDestroy()
     }
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    override fun onBind(intent: Intent): IBinder? {
+        super.onBind(intent)
+        return null
+    }
 
     private fun startAsForeground() {
         val channelId = "lingobubble_service"
@@ -411,26 +407,5 @@ class FloatingService : Service() {
         } else {
             startForeground(1, notification)
         }
-    }
-}
-
-class FloatingServiceLifecycleOwner : LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
-    private val lifecycleRegistry = LifecycleRegistry(this)
-    private val savedStateRegistryController = SavedStateRegistryController.create(this)
-    private val store = ViewModelStore()
-
-    override val lifecycle: Lifecycle get() = lifecycleRegistry
-    override val savedStateRegistry: SavedStateRegistry get() = savedStateRegistryController.savedStateRegistry
-    override val viewModelStore: ViewModelStore get() = store
-
-    fun onCreate() {
-        savedStateRegistryController.performRestore(null)
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
-    }
-    fun onStart() { lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START) }
-    fun onResume() { lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME) }
-    fun onDestroy() {
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-        store.clear()
     }
 }
