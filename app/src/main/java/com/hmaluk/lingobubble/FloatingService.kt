@@ -138,6 +138,12 @@ class FloatingService : LifecycleService(), ViewModelStoreOwner, SavedStateRegis
                 settingsManager.groqKey,
                 groqRateMs
             )
+            "Gemini" -> GeminiTranslationEngine(
+                lifecycleScope,
+                sourceLang.value,
+                targetLang.value,
+                settingsManager.geminiKey
+            )
             "Whisper" -> WhisperOfflineEngine(this, lifecycleScope, sourceLang.value, targetLang.value)
             else -> AzureTranslationEngine(
                 lifecycleScope, 

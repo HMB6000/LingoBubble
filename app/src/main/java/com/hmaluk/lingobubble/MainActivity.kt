@@ -52,7 +52,8 @@ data class MainUiState(
     val autoHideDelay: Float,
     val azureKey: String,
     val azureRegion: String,
-    val groqKey: String
+    val groqKey: String,
+    val geminiKey: String
 )
 
 class MainViewModel(private val settingsManager: SettingsManager) : ViewModel() {
@@ -65,7 +66,8 @@ class MainViewModel(private val settingsManager: SettingsManager) : ViewModel() 
         autoHideDelay = settingsManager.autoHideDelay,
         azureKey = settingsManager.azureKey,
         azureRegion = settingsManager.azureRegion,
-        groqKey = settingsManager.groqKey
+        groqKey = settingsManager.groqKey,
+        geminiKey = settingsManager.geminiKey
     ))
         private set
 
@@ -112,6 +114,11 @@ class MainViewModel(private val settingsManager: SettingsManager) : ViewModel() 
     fun updateGroqKey(key: String) {
         settingsManager.groqKey = key
         uiState = uiState.copy(groqKey = key)
+    }
+
+    fun updateGeminiKey(key: String) {
+        settingsManager.geminiKey = key
+        uiState = uiState.copy(geminiKey = key)
     }
 }
 
@@ -187,6 +194,7 @@ class MainActivity : ComponentActivity() {
                         azureKey = uiState.azureKey,
                         azureRegion = uiState.azureRegion,
                         groqKey = uiState.groqKey,
+                        geminiKey = uiState.geminiKey,
                         onSourceLangChange = viewModel::updateSourceLang,
                         onTargetLangChange = viewModel::updateTargetLang,
                         onEngineChange = viewModel::updateEngine,
@@ -196,6 +204,7 @@ class MainActivity : ComponentActivity() {
                         onAzureKeyChange = viewModel::updateAzureKey,
                         onAzureRegionChange = viewModel::updateAzureRegion,
                         onGroqKeyChange = viewModel::updateGroqKey,
+                        onGeminiKeyChange = viewModel::updateGeminiKey,
                         onStartService = { requestProjectionPermission() },
                         onRequestAudioPermission = { requestAudioPermission() },
                         onRequestOverlayPermission = { requestOverlayPermission() }
@@ -271,6 +280,7 @@ fun MainScreen(
     azureKey: String,
     azureRegion: String,
     groqKey: String,
+    geminiKey: String,
     onSourceLangChange: (String) -> Unit,
     onTargetLangChange: (String) -> Unit,
     onEngineChange: (String) -> Unit,
@@ -280,6 +290,7 @@ fun MainScreen(
     onAzureKeyChange: (String) -> Unit,
     onAzureRegionChange: (String) -> Unit,
     onGroqKeyChange: (String) -> Unit,
+    onGeminiKeyChange: (String) -> Unit,
     onStartService: () -> Unit,
     onRequestAudioPermission: () -> Unit,
     onRequestOverlayPermission: () -> Unit
@@ -380,9 +391,11 @@ fun MainScreen(
                 azureKey = azureKey,
                 azureRegion = azureRegion,
                 groqKey = groqKey,
+                geminiKey = geminiKey,
                 onAzureKeyChange = onAzureKeyChange,
                 onAzureRegionChange = onAzureRegionChange,
-                onGroqKeyChange = onGroqKeyChange
+                onGroqKeyChange = onGroqKeyChange,
+                onGeminiKeyChange = onGeminiKeyChange
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -535,9 +548,11 @@ fun ApiSettingsCard(
     azureKey: String,
     azureRegion: String,
     groqKey: String,
+    geminiKey: String,
     onAzureKeyChange: (String) -> Unit,
     onAzureRegionChange: (String) -> Unit,
-    onGroqKeyChange: (String) -> Unit
+    onGroqKeyChange: (String) -> Unit,
+    onGeminiKeyChange: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
@@ -594,6 +609,19 @@ fun ApiSettingsCard(
                         value = groqKey,
                         onValueChange = onGroqKeyChange,
                         label = { Text("Groq API Key") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    Text("Google Gemini", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = geminiKey,
+                        onValueChange = onGeminiKeyChange,
+                        label = { Text("Gemini API Key") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
@@ -681,7 +709,7 @@ fun EngineCard(
             Spacer(modifier = Modifier.height(16.dp))
             
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                val engines = listOf("Azure", "Groq", "Whisper")
+                val engines = listOf("Azure", "Groq", "Gemini", "Whisper")
                 engines.forEachIndexed { index, engine ->
                     SegmentedButton(
                         shape = SegmentedButtonDefaults.itemShape(index = index, count = engines.size),

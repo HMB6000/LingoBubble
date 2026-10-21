@@ -67,4 +67,8 @@ class SettingsManager(context: Context) {
     var groqKey: String
         get() = encryptedPrefs.getString("groq_key", "") ?: ""
         set(value) { encryptedPrefs.edit().putString("groq_key", value).apply() }
+
+    var geminiKey: String
+        get() = encryptedPrefs.getString("gemini_key", "") ?: ""
+        set(value) { encryptedPrefs.edit().putString("gemini_key", value).apply() }
 }
