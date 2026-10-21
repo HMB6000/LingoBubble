@@ -1,0 +1,27 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Outer Bubble -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M54,20 C32,20 14,35 14,54 C14,64 19,73 27,79 L27,94 C27,96 30,97 32,96 L45,87 C48,88 51,88 54,88 C76,88 94,73 94,54 C94,35 76,20 54,20 Z M54,80 C51,80 48,80 45,79 C44,79 43,79 42,80 L35,85 L35,76 C35,75 34,74 33,73 C26,69 22,62 22,54 C22,39 36,28 54,28 C72,28 86,39 86,54 C86,69 72,80 54,80 Z" />
+
+    <!-- A (Language 1) -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M43,40 L38,55 L40,55 L42,50 L48,50 L50,55 L52,55 L47,40 L43,40 Z M43,48 L45,42 L47,48 L43,48 Z" />
+
+    <!-- 文 (Language 2) -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M65,40 L63,40 L63,43 L55,43 L55,45 L62,45 C59,51 54,54 54,54 L55,56 C55,56 62,52 64,45 C66,51 72,55 74,56 L76,54 C76,54 70,51 68,45 L74,45 L74,43 L65,43 L65,40 Z" />
+
+    <!-- Swap Arrows -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M48,65 L60,65 M58,62 L61,65 L58,68 M60,60 L48,60 M50,57 L47,60 L50,63" />
+
+</vector>
