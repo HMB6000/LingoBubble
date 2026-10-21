@@ -2,16 +2,30 @@ package com.hmaluk.lingobubble
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 
 class SettingsManager(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("lingobubble_settings", Context.MODE_PRIVATE)
+
+    private val masterKey = MasterKey.Builder(context)
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .build()
+
+    private val encryptedPrefs: SharedPreferences = EncryptedSharedPreferences.create(
+        context,
+        "lingobubble_secure_settings",
+        masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
 
     var sourceLang: String
         get() = prefs.getString("source_lang", "Korean") ?: "Korean"
         set(value) { prefs.edit().putString("source_lang", value).apply() }
 
     var targetLang: String
-        get() = prefs.getString("source_lang", "English") ?: "English"
+        get() = prefs.getString("target_lang", "English") ?: "English"
         set(value) { prefs.edit().putString("target_lang", value).apply() }
 
     var engineType: String
@@ -39,14 +53,14 @@ class SettingsManager(context: Context) {
         set(value) { prefs.edit().putBoolean("show_visualizer", value).apply() }
 
     var azureKey: String
-        get() = prefs.getString("azure_key", "") ?: ""
-        set(value) { prefs.edit().putString("azure_key", value).apply() }
+        get() = encryptedPrefs.getString("azure_key", "") ?: ""
+        set(value) { encryptedPrefs.edit().putString("azure_key", value).apply() }
 
     var azureRegion: String
         get() = prefs.getString("azure_region", "eastus") ?: "eastus"
         set(value) { prefs.edit().putString("azure_region", value).apply() }
 
     var groqKey: String
-        get() = prefs.getString("groq_key", "") ?: ""
-        set(value) { prefs.edit().putString("groq_key", value).apply() }
+        get() = encryptedPrefs.getString("groq_key", "") ?: ""
+        set(value) { encryptedPrefs.edit().putString("groq_key", value).apply() }
 }
