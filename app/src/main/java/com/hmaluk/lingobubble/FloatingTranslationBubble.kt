@@ -1,6 +1,9 @@
 package com.hmaluk.lingobubble
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
@@ -248,6 +251,15 @@ fun MinimizedBubble(isRecording: Boolean, onClick: () -> Unit) {
 
 @Composable
 fun AudioVisualizer(level: Float) {
+    val animatedLevel by animateFloatAsState(
+        targetValue = level,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "AudioLevel"
+    )
+
     Row(
         modifier = Modifier.padding(horizontal = 4.dp).height(16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -255,10 +267,10 @@ fun AudioVisualizer(level: Float) {
     ) {
         repeat(4) { index ->
             val barHeight = when(index) {
-                0 -> 4.dp + (10.dp * level * 0.6f)
-                1 -> 4.dp + (12.dp * level)
-                2 -> 4.dp + (10.dp * level * 0.8f)
-                else -> 4.dp + (6.dp * level * 0.4f)
+                0 -> 4.dp + (10.dp * animatedLevel * 0.6f)
+                1 -> 4.dp + (12.dp * animatedLevel)
+                2 -> 4.dp + (10.dp * animatedLevel * 0.8f)
+                else -> 4.dp + (6.dp * animatedLevel * 0.4f)
             }
             Box(
                 modifier = Modifier
