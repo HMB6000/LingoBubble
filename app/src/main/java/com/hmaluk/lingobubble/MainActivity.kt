@@ -38,7 +38,85 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hmaluk.lingobubble.ui.theme.LingoBubbleTheme
+
+data class MainUiState(
+    val sourceLang: String,
+    val targetLang: String,
+    val selectedEngine: String,
+    val groqRate: Float,
+    val showVisualizer: Boolean,
+    val azureKey: String,
+    val azureRegion: String,
+    val groqKey: String
+)
+
+class MainViewModel(private val settingsManager: SettingsManager) : ViewModel() {
+    var uiState by mutableStateOf(MainUiState(
+        sourceLang = settingsManager.sourceLang,
+        targetLang = settingsManager.targetLang,
+        selectedEngine = settingsManager.engineType,
+        groqRate = settingsManager.groqRate,
+        showVisualizer = settingsManager.showVisualizer,
+        azureKey = settingsManager.azureKey,
+        azureRegion = settingsManager.azureRegion,
+        groqKey = settingsManager.groqKey
+    ))
+        private set
+
+    fun updateSourceLang(lang: String) {
+        settingsManager.sourceLang = lang
+        uiState = uiState.copy(sourceLang = lang)
+    }
+
+    fun updateTargetLang(lang: String) {
+        settingsManager.targetLang = lang
+        uiState = uiState.copy(targetLang = lang)
+    }
+
+    fun updateEngine(engine: String) {
+        settingsManager.engineType = engine
+        uiState = uiState.copy(selectedEngine = engine)
+    }
+
+    fun updateGroqRate(rate: Float) {
+        settingsManager.groqRate = rate
+        uiState = uiState.copy(groqRate = rate)
+    }
+
+    fun updateShowVisualizer(show: Boolean) {
+        settingsManager.showVisualizer = show
+        uiState = uiState.copy(showVisualizer = show)
+    }
+
+    fun updateAzureKey(key: String) {
+        settingsManager.azureKey = key
+        uiState = uiState.copy(azureKey = key)
+    }
+
+    fun updateAzureRegion(region: String) {
+        settingsManager.azureRegion = region
+        uiState = uiState.copy(azureRegion = region)
+    }
+
+    fun updateGroqKey(key: String) {
+        settingsManager.groqKey = key
+        uiState = uiState.copy(groqKey = key)
+    }
+}
+
+class MainViewModelFactory(private val settingsManager: SettingsManager) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return MainViewModel(settingsManager) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
 
 class MainActivity : ComponentActivity() {
 
@@ -72,32 +150,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private var sourceLang by mutableStateOf("Korean")
-    private var targetLang by mutableStateOf("English")
-    private var selectedEngine by mutableStateOf("Azure")
-    private var groqRate by mutableStateOf(2f)
-    private var showVisualizer by mutableStateOf(true)
-
-    // API Keys State
-    private var azureKey by mutableStateOf("")
-    private var azureRegion by mutableStateOf("eastus")
-    private var groqKey by mutableStateOf("")
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         settingsManager = SettingsManager(this)
 
-        // Load saved settings
-        sourceLang = settingsManager.sourceLang
-        targetLang = settingsManager.targetLang
-        selectedEngine = settingsManager.engineType
-        groqRate = settingsManager.groqRate
-        showVisualizer = settingsManager.showVisualizer
-        azureKey = settingsManager.azureKey
-        azureRegion = settingsManager.azureRegion
-        groqKey = settingsManager.groqKey
-
         setContent {
+            val viewModel: MainViewModel = viewModel(factory = MainViewModelFactory(settingsManager))
+            val uiState = viewModel.uiState
+
             LingoBubbleTheme {
                 // Auto-start if triggered from Tile
                 LaunchedEffect(intent) {
@@ -111,46 +171,22 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     MainScreen(
-                        sourceLang = sourceLang,
-                        targetLang = targetLang,
-                        selectedEngine = selectedEngine,
-                        groqRate = groqRate,
-                        showVisualizer = showVisualizer,
-                        azureKey = azureKey,
-                        azureRegion = azureRegion,
-                        groqKey = groqKey,
-                        onSourceLangChange = { 
-                            sourceLang = it
-                            settingsManager.sourceLang = it
-                        },
-                        onTargetLangChange = { 
-                            targetLang = it
-                            settingsManager.targetLang = it
-                        },
-                        onEngineChange = { 
-                            selectedEngine = it
-                            settingsManager.engineType = it
-                        },
-                        onGroqRateChange = { 
-                            groqRate = it
-                            settingsManager.groqRate = it
-                        },
-                        onVisualizerToggle = {
-                            showVisualizer = it
-                            settingsManager.showVisualizer = it
-                        },
-                        onAzureKeyChange = {
-                            azureKey = it
-                            settingsManager.azureKey = it
-                        },
-                        onAzureRegionChange = {
-                            azureRegion = it
-                            settingsManager.azureRegion = it
-                        },
-                        onGroqKeyChange = {
-                            groqKey = it
-                            settingsManager.groqKey = it
-                        },
+                        sourceLang = uiState.sourceLang,
+                        targetLang = uiState.targetLang,
+                        selectedEngine = uiState.selectedEngine,
+                        groqRate = uiState.groqRate,
+                        showVisualizer = uiState.showVisualizer,
+                        azureKey = uiState.azureKey,
+                        azureRegion = uiState.azureRegion,
+                        groqKey = uiState.groqKey,
+                        onSourceLangChange = viewModel::updateSourceLang,
+                        onTargetLangChange = viewModel::updateTargetLang,
+                        onEngineChange = viewModel::updateEngine,
+                        onGroqRateChange = viewModel::updateGroqRate,
+                        onVisualizerToggle = viewModel::updateShowVisualizer,
+                        onAzureKeyChange = viewModel::updateAzureKey,
+                        onAzureRegionChange = viewModel::updateAzureRegion,
+                        onGroqKeyChange = viewModel::updateGroqKey,
                         onStartService = { requestProjectionPermission() },
                         onRequestAudioPermission = { requestAudioPermission() },
                         onRequestOverlayPermission = { requestOverlayPermission() }
@@ -199,11 +235,11 @@ class MainActivity : ComponentActivity() {
         val intent = Intent(this, FloatingService::class.java).apply {
             putExtra("resultCode", resultCode)
             putExtra("data", data)
-            putExtra("sourceLang", sourceLang)
-            putExtra("targetLang", targetLang)
-            putExtra("engineType", selectedEngine)
-            putExtra("groqRate", (groqRate * 1000).toLong())
-            putExtra("showVisualizer", showVisualizer)
+            putExtra("sourceLang", settingsManager.sourceLang)
+            putExtra("targetLang", settingsManager.targetLang)
+            putExtra("engineType", settingsManager.engineType)
+            putExtra("groqRate", (settingsManager.groqRate * 1000).toLong())
+            putExtra("showVisualizer", settingsManager.showVisualizer)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(intent)
