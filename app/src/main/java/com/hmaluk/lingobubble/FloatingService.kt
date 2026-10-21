@@ -34,9 +34,13 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
+import androidx.savedstate.SavedStateRegistry
+import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import kotlinx.coroutines.Dispatchers
@@ -44,12 +48,18 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-class FloatingService : LifecycleService() {
+class FloatingService : LifecycleService(), ViewModelStoreOwner, SavedStateRegistryOwner {
 
     companion object {
         var isRunning = false
             private set
     }
+
+    private val savedStateRegistryController = SavedStateRegistryController.create(this)
+    private val store = ViewModelStore()
+
+    override val savedStateRegistry: SavedStateRegistry get() = savedStateRegistryController.savedStateRegistry
+    override val viewModelStore: ViewModelStore get() = store
 
     private lateinit var windowManager: WindowManager
     private lateinit var composeView: ComposeView
@@ -142,6 +152,7 @@ class FloatingService : LifecycleService() {
 
     override fun onCreate() {
         super.onCreate()
+        savedStateRegistryController.performRestore(null)
         isRunning = true
         settingsManager = SettingsManager(this)
         
@@ -153,10 +164,6 @@ class FloatingService : LifecycleService() {
         startAsForeground()
 
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        
-        lifecycleOwner.onCreate()
-        lifecycleOwner.onStart()
-        lifecycleOwner.onResume()
 
         setupMainOverlay()
         setupSettingsOverlay()
@@ -164,7 +171,7 @@ class FloatingService : LifecycleService() {
 
     private fun setupMainOverlay() {
         composeView = ComposeView(this).apply {
-            setViewTreeLifecycleOwner(lifecycleOwner)
+            setViewTreeLifecycleOwner(this@FloatingService)
             setViewTreeViewModelStoreOwner(this@FloatingService)
             setViewTreeSavedStateRegistryOwner(this@FloatingService)
 
@@ -224,7 +231,7 @@ class FloatingService : LifecycleService() {
 
     private fun setupSettingsOverlay() {
         settingsView = ComposeView(this).apply {
-            setViewTreeLifecycleOwner(lifecycleOwner)
+            setViewTreeLifecycleOwner(this@FloatingService)
             setViewTreeViewModelStoreOwner(this@FloatingService)
             setViewTreeSavedStateRegistryOwner(this@FloatingService)
             setContent {
@@ -379,7 +386,7 @@ class FloatingService : LifecycleService() {
         mediaProjection?.stop()
         if (::composeView.isInitialized) windowManager.removeView(composeView)
         if (isSettingsVisible.value) windowManager.removeView(settingsView)
-        lifecycleOwner.onDestroy()
+        store.clear()
     }
 
     override fun onBind(intent: Intent): IBinder? {
