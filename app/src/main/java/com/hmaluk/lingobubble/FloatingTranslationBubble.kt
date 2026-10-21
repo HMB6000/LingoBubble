@@ -202,9 +202,10 @@ fun SubtitleOverlay(
                                 Icon(Icons.Rounded.Close, "Close", tint = Color.White, modifier = Modifier.size(20.dp))
                             }
                         }
-                    } // End of AnimatedVisibility
+                    }
+                } // End of AnimatedVisibility
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                     // Subtitle Area
                     Box(
