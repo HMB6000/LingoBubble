@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -42,6 +43,7 @@ fun SubtitleOverlay(
     audioLevel: Float, // 0.0 to 1.0
     showVisualizer: Boolean,
     isMinimized: Boolean,
+    autoHideDelay: Float,
     onToggleRecording: () -> Unit,
     onClose: () -> Unit,
     onSettingsClick: () -> Unit,
@@ -54,21 +56,49 @@ fun SubtitleOverlay(
     val status by statusFlow.collectAsState()
     val haptic = LocalHapticFeedback.current
     
+    var showControlBar by remember { mutableStateOf(true) }
+    var lastInteractionTime by remember { mutableStateOf(System.currentTimeMillis()) }
+
+    LaunchedEffect(isRecording, lastInteractionTime, autoHideDelay) {
+        if (isRecording) {
+            while (true) {
+                kotlinx.coroutines.delay(500)
+                if (System.currentTimeMillis() - lastInteractionTime > autoHideDelay * 1000) {
+                    showControlBar = false
+                }
+            }
+        } else {
+            showControlBar = true
+        }
+    }
+
     val displayLines = (translatedText.split("\n").filter { it.isNotBlank() } + partialText)
         .takeLast(2)
         .joinToString("\n")
 
     Box(
         modifier = Modifier
-            .then(if (isMinimized) Modifier.wrapContentSize() else Modifier.fillMaxWidth())
+            .then(if (isMinimized) Modifier.wrapContentSize() else Modifier.widthIn(min = 200.dp, max = 340.dp))
             .wrapContentHeight()
             .pointerInput(Unit) {
                 detectDragGestures(
-                    onDragStart = { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
+                    onDragStart = { 
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        lastInteractionTime = System.currentTimeMillis()
+                        showControlBar = true
+                    }
                 ) { change, dragAmount ->
                     change.consume()
+                    lastInteractionTime = System.currentTimeMillis()
                     onDrag(dragAmount.x.toInt(), dragAmount.y.toInt())
                 }
+            }
+            .clickable(
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                indication = null
+            ) {
+                lastInteractionTime = System.currentTimeMillis()
+                showControlBar = !showControlBar
             }
     ) {
         AnimatedContent(
@@ -91,12 +121,17 @@ fun SubtitleOverlay(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     // Control Bar
-                    Surface(
-                        modifier = Modifier.wrapContentSize(),
-                        shape = RoundedCornerShape(24.dp),
-                        color = Color.Black.copy(alpha = 0.5f),
-                        tonalElevation = 8.dp
+                    AnimatedVisibility(
+                        visible = showControlBar,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
                     ) {
+                        Surface(
+                            modifier = Modifier.wrapContentSize(),
+                            shape = RoundedCornerShape(24.dp),
+                            color = Color.Black.copy(alpha = 0.5f),
+                            tonalElevation = 8.dp
+                        ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -167,7 +202,7 @@ fun SubtitleOverlay(
                                 Icon(Icons.Rounded.Close, "Close", tint = Color.White, modifier = Modifier.size(20.dp))
                             }
                         }
-                    }
+                    } // End of AnimatedVisibility
 
                     Spacer(modifier = Modifier.height(6.dp))
 

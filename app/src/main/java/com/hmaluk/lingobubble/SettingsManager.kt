@@ -44,6 +44,10 @@ class SettingsManager(context: Context) {
         get() = prefs.getFloat("opacity", 0.6f)
         set(value) { prefs.edit().putFloat("opacity", value).apply() }
 
+    var autoHideDelay: Float
+        get() = prefs.getFloat("auto_hide_delay", 3f)
+        set(value) { prefs.edit().putFloat("auto_hide_delay", value).apply() }
+
     var showBackground: Boolean
         get() = prefs.getBoolean("show_background", true)
         set(value) { prefs.edit().putBoolean("show_background", value).apply() }

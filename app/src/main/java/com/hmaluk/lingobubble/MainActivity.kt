@@ -49,6 +49,7 @@ data class MainUiState(
     val selectedEngine: String,
     val groqRate: Float,
     val showVisualizer: Boolean,
+    val autoHideDelay: Float,
     val azureKey: String,
     val azureRegion: String,
     val groqKey: String
@@ -61,6 +62,7 @@ class MainViewModel(private val settingsManager: SettingsManager) : ViewModel() 
         selectedEngine = settingsManager.engineType,
         groqRate = settingsManager.groqRate,
         showVisualizer = settingsManager.showVisualizer,
+        autoHideDelay = settingsManager.autoHideDelay,
         azureKey = settingsManager.azureKey,
         azureRegion = settingsManager.azureRegion,
         groqKey = settingsManager.groqKey
@@ -90,6 +92,11 @@ class MainViewModel(private val settingsManager: SettingsManager) : ViewModel() 
     fun updateShowVisualizer(show: Boolean) {
         settingsManager.showVisualizer = show
         uiState = uiState.copy(showVisualizer = show)
+    }
+
+    fun updateAutoHideDelay(delay: Float) {
+        settingsManager.autoHideDelay = delay
+        uiState = uiState.copy(autoHideDelay = delay)
     }
 
     fun updateAzureKey(key: String) {
@@ -176,6 +183,7 @@ class MainActivity : ComponentActivity() {
                         selectedEngine = uiState.selectedEngine,
                         groqRate = uiState.groqRate,
                         showVisualizer = uiState.showVisualizer,
+                        autoHideDelay = uiState.autoHideDelay,
                         azureKey = uiState.azureKey,
                         azureRegion = uiState.azureRegion,
                         groqKey = uiState.groqKey,
@@ -184,6 +192,7 @@ class MainActivity : ComponentActivity() {
                         onEngineChange = viewModel::updateEngine,
                         onGroqRateChange = viewModel::updateGroqRate,
                         onVisualizerToggle = viewModel::updateShowVisualizer,
+                        onAutoHideDelayChange = viewModel::updateAutoHideDelay,
                         onAzureKeyChange = viewModel::updateAzureKey,
                         onAzureRegionChange = viewModel::updateAzureRegion,
                         onGroqKeyChange = viewModel::updateGroqKey,
@@ -240,6 +249,7 @@ class MainActivity : ComponentActivity() {
             putExtra("engineType", settingsManager.engineType)
             putExtra("groqRate", (settingsManager.groqRate * 1000).toLong())
             putExtra("showVisualizer", settingsManager.showVisualizer)
+            putExtra("autoHideDelay", settingsManager.autoHideDelay)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(intent)
@@ -257,6 +267,7 @@ fun MainScreen(
     selectedEngine: String,
     groqRate: Float,
     showVisualizer: Boolean,
+    autoHideDelay: Float,
     azureKey: String,
     azureRegion: String,
     groqKey: String,
@@ -265,6 +276,7 @@ fun MainScreen(
     onEngineChange: (String) -> Unit,
     onGroqRateChange: (Float) -> Unit,
     onVisualizerToggle: (Boolean) -> Unit,
+    onAutoHideDelayChange: (Float) -> Unit,
     onAzureKeyChange: (String) -> Unit,
     onAzureRegionChange: (String) -> Unit,
     onGroqKeyChange: (String) -> Unit,

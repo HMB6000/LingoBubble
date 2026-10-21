@@ -81,6 +81,7 @@ class FloatingService : LifecycleService(), ViewModelStoreOwner, SavedStateRegis
     private var isMinimized = mutableStateOf(false)
     private var audioLevel = mutableStateOf(0f)
     private var showVisualizer = mutableStateOf(true)
+    private var autoHideDelay = mutableFloatStateOf(3f)
 
     private var mediaProjection: MediaProjection? = null
     private var audioRecord: AudioRecord? = null
@@ -105,6 +106,7 @@ class FloatingService : LifecycleService(), ViewModelStoreOwner, SavedStateRegis
         engineType.value = intent?.getStringExtra("engineType") ?: settingsManager.engineType
         groqRateMs = intent?.getLongExtra("groqRate", settingsManager.groqRate.toLong() * 1000) ?: (settingsManager.groqRate.toLong() * 1000)
         showVisualizer.value = intent?.getBooleanExtra("showVisualizer", settingsManager.showVisualizer) ?: settingsManager.showVisualizer
+        autoHideDelay.floatValue = intent?.getFloatExtra("autoHideDelay", settingsManager.autoHideDelay) ?: settingsManager.autoHideDelay
 
         if (resultCode == Activity.RESULT_OK && data != null) {
             val mediaProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
@@ -192,6 +194,7 @@ class FloatingService : LifecycleService(), ViewModelStoreOwner, SavedStateRegis
                         audioLevel = audioLevel.value,
                         showVisualizer = showVisualizer.value,
                         isMinimized = isMinimized.value,
+                        autoHideDelay = autoHideDelay.floatValue,
                         onToggleRecording = { toggleRecording() },
                         onClose = { stopSelf() },
                         onSettingsClick = { toggleSettings() },
